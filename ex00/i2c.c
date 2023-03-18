@@ -4,7 +4,7 @@
 const char hex_chars[] = "0123456789ABCDEF";
 
 void i2c_start_write(uint8_t slave_address);
-void i2c_write(unsigned char data);
+uint8_t i2c_write(unsigned char data);
 void i2c_stop(void);
 void i2c_start_read(uint8_t slave_address);
 uint8_t i2c_read(uint8_t ack, uint8_t * buff);
@@ -21,6 +21,14 @@ ISR(TWI_vect)
 		uint8_t data = TWDR;
 		TWCR = (1<<TWIE) | (1<<TWINT) | (1<<TWEA) | (1<<TWEN);
 	}
+}
+
+uint8_t i2c_wait(void)
+{
+	while ((TWCR & (1 << TWINT)) == 0); //wait end of operation
+
+	//TODO ADD A RETURN IN CASE OF TIMEOUT OR ERROR
+	return 0;
 }
 
 void i2c_init(void)
@@ -52,9 +60,11 @@ void i2c_send_full_command(uint8_t slave_address, uint8_t command, uint8_t param
 
 void i2c_send_byte(uint8_t slave_address, uint8_t byte)
 {
+	uint8_t ret;
 	i2c_start_write(slave_address);
-	i2c_write(byte);
+	ret = i2c_write(byte);
 	i2c_stop();
+	return ret;
 }
 
 uint8_t i2c_read_byte(uint8_t slave_address, uint8_t * buffer, uint8_t size)
@@ -109,7 +119,7 @@ void i2c_stop(void)
 	TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
 }
 
-void i2c_write(unsigned char data)
+uint8_t i2c_write(unsigned char data)
 {
 	//moving data into data register
 	TWDR = data;
@@ -117,7 +127,7 @@ void i2c_write(unsigned char data)
 	//sending data
 	TWCR = 1 << TWINT | 1 << TWEN;
 
-	while ((TWCR & (1 << TWINT)) == 0); // wait until it is done
+	return i2c_wait();
 }
 
 uint8_t i2c_read(uint8_t ack, uint8_t * buff)
