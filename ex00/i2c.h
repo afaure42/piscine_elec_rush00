@@ -30,8 +30,19 @@
 
 #define OWN_SLAVE_ADDRESS 0x10
 
+#define TIMEOUT 1
+
 void i2c_send_byte(uint8_t slave_address, uint8_t byte);
-uint8_t i2c_read_byte(uint8_t slave_address, uint8_t ack);
+
+/**
+ * @brief 
+ *  will read bytes sending ACK until buffer is full sending NACK at the last byte
+ * @param slave_address 
+ * @param buffer 
+ * @param size
+ * @return uint8_t 
+ */
+uint8_t i2c_read_byte(uint8_t slave_address, uint8_t * buffer, uint8_t buffer_size);
 void i2c_send_full_command(uint8_t slave_address, uint8_t command, uint8_t param1, uint8_t param2);
 void i2c_init(void);
 void i2c_init_as_slave(void);
