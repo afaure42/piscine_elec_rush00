@@ -3,7 +3,7 @@ F_CPU = 16000000UL
 BAUDRATE=115200
 PROGRAMMER= -c arduino -P /dev/ttyUSB0 -b$(BAUDRATE) -p $(DEVICE)
 
-SRCS = slave.c uart.c
+SRCS = slave.c uart.c i2c.c
 
 BINS = $(SRCS:.c=.bin)
 HEX = main.hex

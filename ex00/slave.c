@@ -4,10 +4,12 @@
 #include <util/twi.h>
 
 #include "uart.h"
+#include "i2c.h"
 
 void stop_game_waiting();
 
 volatile int32_t timer_count = 0;
+volatile int32_t clicked_ms = 0;
 
 //Timer 1 counted 4 secondes
 ISR(TIMER1_COMPA_vect) {
@@ -19,10 +21,7 @@ ISR(INT0_vect) {
 	//Get timer value
 	int32_t timer_ms = TCNT1 / 15.625;
 	//Add stored timer value
-	int32_t total_ms = timer_count * 4000 + timer_ms;
-	uart_printstr("Elapsed time: ");
-	uart_putnbr(total_ms);
-	uart_printstr("ms\r\n");
+	clicked_ms = timer_count * 4000 + timer_ms;
 	stop_game_waiting();
 }
 
@@ -58,8 +57,13 @@ void stop_game_waiting() {
 	timer_count = 0;
 }
 
+void send_status_to_master() {
+
+}
+
 int main() {
 	uart_init();
+	i2c_init_as_slave();
 	start_game_waiting();
 
 	sei();

@@ -2,13 +2,31 @@
 
 const char hex_chars[] = "0123456789ABCDEF";
 
-void i2c_init(void)
+void i2c_start_write(uint8_t slave_address);
+void i2c_write(unsigned char data);
+void i2c_stop(void);
+void i2c_start_read(uint8_t slave_address);
+char i2c_read(uint8_t ack);
+
+void i2c_common_init(void)
 {
 	//setting SCL frequency in the bitrate register
 	TWBR = TWI_BITRATE;
 
 	//setting no prescaler 
 	TWSR = 0;
+}
+
+void i2c_init_as_master(void)
+{
+	i2c_common_init();
+}
+
+void i2c_init_as_slave(void)
+{
+	i2c_common_init();
+	TWAR = OWN_SLAVE_ADDRESS;
+	TWCR = (1 << TWEA) | (1 << TWEN);
 }
 
 void i2c_send_full_command(uint8_t slave_address, uint8_t command, uint8_t param1, uint8_t param2)
@@ -27,11 +45,11 @@ void i2c_send_byte(uint8_t slave_address, uint8_t byte)
 	i2c_stop();
 }
 
-uint8_t i2c_read_byte(uint8_t slave_address)
+uint8_t i2c_read_byte(uint8_t slave_address, uint8_t ack)
 {
 	uint8_t ret;
 	i2c_start_read(slave_address);
-	ret = i2c_read();
+	ret = i2c_read(ack);
 	i2c_stop();
 	return ret;
 }
