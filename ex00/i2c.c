@@ -7,7 +7,7 @@ void i2c_start_write(uint8_t slave_address);
 void i2c_write(unsigned char data);
 void i2c_stop(void);
 void i2c_start_read(uint8_t slave_address);
-char i2c_read(uint8_t ack);
+uint8_t i2c_read(uint8_t ack, uint8_t * buff);
 
 ISR(TWI_vect)
 {
@@ -28,6 +28,8 @@ void i2c_init(void)
 	//setting SCL frequency in the bitrate register
 	TWBR = TWI_BITRATE;
 
+	//setting up own SLA addr and enabling general call
+	TWAR = TWI_ADDR | 1 << TWGCE;
 	//setting no prescaler 
 	TWSR = 0;
 }
@@ -55,13 +57,17 @@ void i2c_send_byte(uint8_t slave_address, uint8_t byte)
 	i2c_stop();
 }
 
-uint8_t i2c_read_byte(uint8_t slave_address, uint8_t ack)
+uint8_t i2c_read_byte(uint8_t slave_address, uint8_t * buffer, uint8_t size)
 {
-	uint8_t ret;
 	i2c_start_read(slave_address);
-	ret = i2c_read(ack);
+
+	for(uint8_t i = 0; i < size; i++)
+	{
+		if (i2c_read(i == size - 1 ? NACK : ACK, buffer + i) == TIMEOUT)
+			return TIMEOUT;
+	}
 	i2c_stop();
-	return ret;
+	return 0;
 }
 
 void i2c_start_write(uint8_t slave_address)
@@ -114,16 +120,17 @@ void i2c_write(unsigned char data)
 	while ((TWCR & (1 << TWINT)) == 0); // wait until it is done
 }
 
-char i2c_read(uint8_t ack)
+uint8_t i2c_read(uint8_t ack, uint8_t * buff)
 {
 	//setting TWI in receive mode
 	TWCR = 1 << TWINT | 1 << TWEN | ack << TWEA;
 
 	//waiting to receive data
 	while((TWCR & (1 << TWINT)) == 0);
-	// uart_print_twi_status();
+	//TODO detect timeout
 
-	return (TWDR);
+	*buff = TWDR;
+	return 0;
 }
 
 void uart_print_twi_status()
