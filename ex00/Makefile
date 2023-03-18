@@ -3,33 +3,35 @@ F_CPU = 16000000UL
 BAUDRATE=115200
 PROGRAMMER= -c arduino -P /dev/ttyUSB0 -b$(BAUDRATE) -p $(DEVICE)
 
-SRCS = main.c
+SRCS = slave.c uart.c
 
 BINS = $(SRCS:.c=.bin)
-HEXES = $(BINS:.bin=.hex)
+HEX = main.hex
 
 CC = avr-gcc
 
 
-CFLAGS = -Wall -D F_CPU=$(F_CPU) -D UART_BAUDRATE=$(BAUDRATE) -mmcu=$(DEVICE) -O3
+CFLAGS = -Wall -D F_CPU=$(F_CPU) -D UART_BAUDRATE=$(BAUDRATE) -mmcu=$(DEVICE) -Os
 
 all: flash
 
 
 
-$(BINS): $(SRCS)
-	$(CC) $(CFLAGS) $< -o $@
+%.bin: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(HEXES): $(BINS)
-	avr-objcopy -O ihex $< $@
+$(HEX): $(BINS)
+	$(CC) $(CFLAGS) -o linked.bin ${BINS}
+	avr-objcopy -O ihex linked.bin ${HEX}
 
 
 
-hex: $(HEXES)
+hex: $(HEX)
 
 flash: hex
-	avrdude $(PROGRAMMER) -U flash:w:$(HEXES):i
+	avrdude $(PROGRAMMER) -U flash:w:$(HEX):i
 
 clean:
-	rm -rf $(BINS) $(HEXES)
+	rm -rf $(BINS) $(HEX)
 	
+re: clean all

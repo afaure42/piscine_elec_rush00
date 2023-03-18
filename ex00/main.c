@@ -3,12 +3,10 @@
 #include <util/twi.h>
 #include "i2c.h"
 
-#define UART_BAUD_SETTING (((F_CPU / 8 / UART_BAUDRATE ) -1 ) / 2)
-
 #define I2C_ADDR 0xF8
 
 #define GAME_LOST	0xFF
-#define GAME_WON	0x00
+#define GAM                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   E_WON	0x00
 
 int main()
 {
