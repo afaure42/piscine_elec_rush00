@@ -1,4 +1,5 @@
 #include "i2c.h"
+#include <avr/interrupt.h>
 
 const char hex_chars[] = "0123456789ABCDEF";
 
@@ -7,6 +8,20 @@ void i2c_write(unsigned char data);
 void i2c_stop(void);
 void i2c_start_read(uint8_t slave_address);
 char i2c_read(uint8_t ack);
+
+ISR(TWI_vect)
+{
+	if (TW_STATUS == TW_ST_SLA_ACK)
+	{
+		// master is requesting data
+		TWCR = (1<<TWIE) | (1<<TWINT) | (1<<TWEA) | (1<<TWEN);
+	}
+	if (TW_STATUS == TW_SR_DATA_ACK) {
+		// master is sending data
+		uint8_t data = TWDR;
+		TWCR = (1<<TWIE) | (1<<TWINT) | (1<<TWEA) | (1<<TWEN);
+	}
+}
 
 void i2c_init(void)
 {
@@ -20,8 +35,8 @@ void i2c_init(void)
 void i2c_init_as_slave(void)
 {
 	i2c_init();
-	TWAR = OWN_SLAVE_ADDRESS;
-	TWCR = (1 << TWEA) | (1 << TWEN);
+	TWAR = OWN_SLAVE_ADDRESS << 1;
+	TWCR = (1<<TWIE) | (1<<TWEA) | (1<<TWINT) | (1<<TWEN);
 }
 
 void i2c_send_full_command(uint8_t slave_address, uint8_t command, uint8_t param1, uint8_t param2)
@@ -86,7 +101,6 @@ void i2c_stop(void)
 	//sending STOP on the TWI ( TWSTO for stop,
 	// TWINT to clear interrupt flag and start operating)
 	TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-
 }
 
 void i2c_write(unsigned char data)
