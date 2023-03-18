@@ -10,6 +10,8 @@ volatile int result = 0;
 
 ISR(TIMER1_COMPA_vect) {
 	timer_count++;
+
+	//Formula 1 LED
 	if (timer_count == (TIMER - 1) / 4) {
 		PORTB |= (1 << LED1);
 	}
@@ -37,12 +39,13 @@ void start_game() {
 		_delay_ms(500);
 		PORTD &= ~(1 << LED_G);
 		state = PLAYING;
+
+		//Timer configuration
 		TCNT1 = 0;
 		TCCR1A = 0;
 		TCCR1B = (1 << WGM12);
 		TCCR1B |= (1 << CS12) | (1 << CS10);
-		// 1s
-		OCR1A = 15625;
+		OCR1A = 15625; // = 1s
 		TIMSK1 |= (1 << OCIE1A);
 	}
 }
@@ -51,7 +54,6 @@ void stop_timer() {
 	TCCR1B = 0;
 	TIMSK1 = 0;
 }
-
 
 void reset() {
 	uart_printstr("Reset\r\n");
@@ -102,6 +104,7 @@ void check_end() {
 
 ISR(INT0_vect) {
 	if (state == STARTING && !ready) {
+		//Click to set ready
 		uart_printstr("Ready\r\n");
 
 		ready = 1;
@@ -111,6 +114,7 @@ ISR(INT0_vect) {
 		start_game();
 		_delay_ms(20);
 	} else if (state == PLAYING) {
+		//Click in game
 		state = CLICKED;
 		uint32_t time = TCNT1 / 15.625 + (timer_count * 1000);
 
