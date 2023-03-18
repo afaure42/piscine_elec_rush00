@@ -32,7 +32,7 @@
 
 #define TIMEOUT 1
 
-void i2c_send_byte(uint8_t slave_address, uint8_t byte);
+uint8_t i2c_send_byte(uint8_t slave_address, uint8_t byte);
 
 /**
  * @brief 
