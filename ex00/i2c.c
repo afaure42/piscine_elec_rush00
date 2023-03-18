@@ -8,7 +8,7 @@ void i2c_stop(void);
 void i2c_start_read(uint8_t slave_address);
 char i2c_read(uint8_t ack);
 
-void i2c_common_init(void)
+void i2c_init(void)
 {
 	//setting SCL frequency in the bitrate register
 	TWBR = TWI_BITRATE;
@@ -17,14 +17,9 @@ void i2c_common_init(void)
 	TWSR = 0;
 }
 
-void i2c_init_as_master(void)
-{
-	i2c_common_init();
-}
-
 void i2c_init_as_slave(void)
 {
-	i2c_common_init();
+	i2c_init();
 	TWAR = OWN_SLAVE_ADDRESS;
 	TWCR = (1 << TWEA) | (1 << TWEN);
 }
