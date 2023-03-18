@@ -94,6 +94,7 @@ void check_end() {
 		}
 		_delay_ms(1000);
 		PORTD &= ~(1 << LED_R);
+		PORTD &= ~(1 << LED_G);
 		_delay_ms(500);
 		reset();
 	}
