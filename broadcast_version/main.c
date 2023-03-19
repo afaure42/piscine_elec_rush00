@@ -8,6 +8,12 @@ volatile int player_finished = 0;
 volatile int winnable = 1;
 volatile int result = 0;
 
+void start_game();
+void check_end();
+void reset_game();
+void timeout();
+void stop_timer();
+
 ISR(TWI_vect)
 {
 	uart_printstr("Interrupt\r\n");
@@ -31,7 +37,7 @@ ISR(TWI_vect)
 			check_end();
 		} else if (command == RESET_COMMAND) {
 			uart_printstr("Receive reset command\r\n");
-			reset_test();
+			reset_game();
 		}
 	}
 	TWCR = (1 << TWINT) | (1 << TWEA) | (1 << TWEN) | (1 << TWIE);
@@ -70,6 +76,12 @@ ISR(TIMER1_COMPA_vect) {
 	}
 }
 
+void timeout() {
+	stop_timer();
+	i2c_send_byte(0x0, RESET_COMMAND);
+	reset_game();
+}
+
 void stop_timer() {
 	TCCR1B = 0;
 	TIMSK1 = 0;
@@ -95,7 +107,7 @@ void start_game() {
 }
 
 
-void reset_test() {
+void reset_game() {
 	uart_printstr("Reset\r\n");
 
 	stop_timer();
@@ -151,7 +163,7 @@ void check_end() {
 		PORTD &= ~(1 << LED_R);
 		PORTD &= ~(1 << LED_G);
 		_delay_ms(500);
-		reset_test();
+		reset_game();
 	}
 }
 
@@ -210,7 +222,7 @@ int main()
 	uart_init();
 	i2c_init();
 
-	reset_test();
+	reset_game();
 	sei();
 
 	for(;;)
