@@ -9,22 +9,19 @@ volatile int winnable = 1;
 volatile int result = 0;
 volatile error_state error = NOTHING;
 
-void reset_test();
-void start_game();
-void check_end();
-
-void trigger_resync()
-{
-	i2c_send_byte(0x0, RESET_COMMAND);
-	reset_test();
-	TWCR = (1 << TWINT) | (1 << TWEA) | (1 << TWEN) | (1 << TWIE);
-}
 
 void start_game();
 void check_end();
 void reset_game();
 void timeout();
 void stop_timer();
+
+void trigger_resync()
+{
+	i2c_send_byte(0x0, RESET_COMMAND);
+	reset_game();
+	TWCR = (1 << TWINT) | (1 << TWEA) | (1 << TWEN) | (1 << TWIE);
+}
 
 ISR(TWI_vect)
 {
@@ -42,27 +39,35 @@ ISR(TWI_vect)
 		if (command == READY_COMMAND) {
 			uart_printstr("Receive ready command\r\n");
 			if (state != STARTING){
+				uart_printstr("ERROR DESYNC\r\n");
 				trigger_resync();
 				reti();
+				uart_printstr("THIS IS HORRIFIC\r\n");
 			}
 			player_ready++;
 			if (player_ready!= data) {
+				uart_printstr("ERROR DESYNC\r\n");
 				trigger_resync();
 				reti();
+				uart_printstr("THIS IS HORRIFIC\r\n");
 			}
 			start_game();
 
 		} else if (command == FINISH_COMMAND) {
 			uart_printstr("Receive finish command\r\n");
 
-			if (state != PLAYING) {
+			if (state != PLAYING && state != CLICKED) {
+				uart_printstr("ERROR DESYNC\r\n");
 				trigger_resync();
 				reti();
+				uart_printstr("THIS IS HORRIFIC\r\n");
 			}
 			player_finished++;
 			if (player_finished != data) {
+				uart_printstr("ERROR DESYNC\r\n");
 				trigger_resync();
 				reti();
+				uart_printstr("THIS IS HORRIFIC\r\n");
 			}
 			winnable = 0;
 			check_end();
@@ -70,15 +75,19 @@ ISR(TWI_vect)
 		} else if (command == LOSE_COMMAND) {
 			uart_printstr("Receive lose command\r\n");
 
-			if (state != PLAYING) {
+			if (state != PLAYING && state != CLICKED) {
+				uart_printstr("ERROR DESYNC\r\n");
 				trigger_resync();
 				reti();
+				uart_printstr("THIS IS HORRIFIC\r\n");
 			}
 
 			player_finished++;
 			if (player_finished != data) {
+				uart_printstr("ERROR DESYNC\r\n");
 				trigger_resync();
 				reti();
+				uart_printstr("THIS IS HORRIFIC\r\n");
 			}
 			check_end();
 
@@ -86,6 +95,7 @@ ISR(TWI_vect)
 			uart_printstr("Receive reset command\r\n");
 			reset_game();
 			reti();
+			uart_printstr("help me god\r\n");
 		}
 	}
 	TWCR = (1 << TWINT) | (1 << TWEA) | (1 << TWEN) | (1 << TWIE);
@@ -127,6 +137,7 @@ ISR(TIMER1_COMPA_vect) {
 void timeout() {
 	stop_timer();
 	i2c_send_byte(0x0, RESET_COMMAND);
+	uart_printstr("reset TIMEOUT\r\n");
 	reset_game();
 }
 
@@ -157,7 +168,6 @@ void start_game() {
 
 void reset_game() {
 	uart_printstr("Reset\r\n");
-
 	stop_timer();
 
 	state = STARTING;
@@ -211,6 +221,7 @@ void check_end() {
 		PORTD &= ~(1 << LED_R);
 		PORTD &= ~(1 << LED_G);
 		_delay_ms(500);
+		uart_printstr("reset CHECK END\r\n");
 		reset_game();
 	}
 }

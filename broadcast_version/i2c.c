@@ -47,10 +47,8 @@ uint8_t i2c_receive_byte(uint8_t * buffer, uint8_t size)
 		TWCR = (1 << TWINT) | ((i != size - 1) << TWEA) | (1 << TWEN);
 		if (i2c_wait() != 0)
 			return 1;
-		buffer = TWDR;
+		*buffer = TWDR;
 	}
-	TWCR = (1 << TWINT) | (1 << TWEN);
-	i2c_wait(); //wait for stop
 	return 0;
 }
 

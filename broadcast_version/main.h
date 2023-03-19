@@ -20,7 +20,7 @@
 
 # define TIMER 5
 
-# define PLAYER_COUNT 1
+# define PLAYER_COUNT 2
 
 typedef enum e_game_state {
 	STARTING,
