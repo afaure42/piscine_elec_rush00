@@ -134,9 +134,9 @@ ISR(TIMER1_COMPA_vect) {
 			PORTB &= ~(1 << LED3);
 			PORTB &= ~(1 << LED4);
 		}
-		// if (timer_count == 2 * TIMER) {
-			// timeout();
-		// }
+		if (timer_count >= TIMER + TIMEOUT) {
+			timeout();
+		}
 	}
 }
 
