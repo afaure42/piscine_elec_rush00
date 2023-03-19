@@ -20,6 +20,12 @@ void trigger_resync()
 	TWCR = (1 << TWINT) | (1 << TWEA) | (1 << TWEN) | (1 << TWIE);
 }
 
+void start_game();
+void check_end();
+void reset_game();
+void timeout();
+void stop_timer();
+
 ISR(TWI_vect)
 {
 	uart_printstr("Interrupt\r\n");
@@ -78,7 +84,7 @@ ISR(TWI_vect)
 
 		} else if (command == RESET_COMMAND) {
 			uart_printstr("Receive reset command\r\n");
-			reset_test();
+			reset_game();
 			reti();
 		}
 	}
@@ -118,6 +124,12 @@ ISR(TIMER1_COMPA_vect) {
 	}
 }
 
+void timeout() {
+	stop_timer();
+	i2c_send_byte(0x0, RESET_COMMAND);
+	reset_game();
+}
+
 void stop_timer() {
 	TCCR1B = 0;
 	TIMSK1 = 0;
@@ -128,12 +140,12 @@ void start_game() {
 	if (player_ready >= PLAYER_COUNT) {
 		uart_printstr("Starting game\r\n");
 		stop_timer();
-		timer_count = 0;
 		_delay_ms(500);
 		PORTD &= ~(1 << LED_G);
 		state = PLAYING;
 	}
 	//Timer configuration
+	timer_count = 0;
 	TCNT1 = 0;
 	TCCR1A = 0;
 	TCCR1B = (1 << WGM12);
@@ -143,7 +155,7 @@ void start_game() {
 }
 
 
-void reset_test() {
+void reset_game() {
 	uart_printstr("Reset\r\n");
 
 	stop_timer();
@@ -199,7 +211,7 @@ void check_end() {
 		PORTD &= ~(1 << LED_R);
 		PORTD &= ~(1 << LED_G);
 		_delay_ms(500);
-		reset_test();
+		reset_game();
 	}
 }
 
@@ -258,7 +270,7 @@ int main()
 	uart_init();
 	i2c_init();
 
-	reset_test();
+	reset_game();
 	sei();
 
 	for(;;)
