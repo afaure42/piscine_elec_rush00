@@ -14,6 +14,7 @@ extern int player_finished;
 extern int winnable;
 void start_game();
 void check_end();
+void reset();
 
 ISR(TWI_vect)
 {
@@ -36,6 +37,9 @@ ISR(TWI_vect)
 			uart_printstr("Receive lose command\r\n");
 			player_finished++;
 			check_end();
+		} else if (command == RESET_COMMAND) {
+			uart_printstr("Receive reset command\r\n");
+			reset();
 		}
 	}
 	TWCR = (1 << TWINT) | (1 << TWEA) | (1 << TWEN) | (1 << TWIE);

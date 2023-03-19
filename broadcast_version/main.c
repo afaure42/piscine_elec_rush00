@@ -8,45 +8,43 @@ volatile int player_finished = 0;
 volatile int winnable = 1;
 volatile int result = 0;
 
+void reset();
+
+void timeout() {
+	i2c_send_byte(0x0, RESET_COMMAND);
+	reset();
+}
+
 ISR(TIMER1_COMPA_vect) {
 	timer_count++;
 
-	//Formula 1 LED
-	if (timer_count == (TIMER - 1) / 4) {
-		PORTB |= (1 << LED1);
-	}
-	if (timer_count == (TIMER - 1) / 2) {
-		PORTB |= (1 << LED2);
-	}
-	if (timer_count == (TIMER - 1) * 3 / 4) {
-		PORTB |= (1 << LED3);
-	}
-	if (timer_count == (TIMER - 1)) {
-		PORTB |= (1 << LED4);
-	}
-	if (timer_count == TIMER) {
-		PORTB &= ~(1 << LED1);
-		PORTB &= ~(1 << LED2);
-		PORTB &= ~(1 << LED3);
-		PORTB &= ~(1 << LED4);
-	}
-}
-
-void start_game() {
-	uart_printstr("Check to start game\r\n");
-	if (player_ready >= PLAYER_COUNT) {
-		uart_printstr("Starting game\r\n");
-		_delay_ms(500);
-		PORTD &= ~(1 << LED_G);
-		state = PLAYING;
-
-		//Timer configuration
-		TCNT1 = 0;
-		TCCR1A = 0;
-		TCCR1B = (1 << WGM12);
-		TCCR1B |= (1 << CS12) | (1 << CS10);
-		OCR1A = 15625; // = 1s
-		TIMSK1 |= (1 << OCIE1A);
+	if (state == STARTING) {
+		if (timer_count == TIMEOUT) {
+			timeout();
+		}
+	} else if (state == PLAYING) {
+		//Formula 1 LED
+		if (timer_count == (TIMER - 1) / 4) {
+			PORTB |= (1 << LED1);
+		}
+		if (timer_count == (TIMER - 1) / 2) {
+			PORTB |= (1 << LED2);
+		}
+		if (timer_count == (TIMER - 1) * 3 / 4) {
+			PORTB |= (1 << LED3);
+		}
+		if (timer_count == (TIMER - 1)) {
+			PORTB |= (1 << LED4);
+		}
+		if (timer_count == TIMER) {
+			PORTB &= ~(1 << LED1);
+			PORTB &= ~(1 << LED2);
+			PORTB &= ~(1 << LED3);
+			PORTB &= ~(1 << LED4);
+		}
+		if (timer_count == 2 * TIMER) {
+			timeout();
+		}
 	}
 }
 
@@ -54,6 +52,26 @@ void stop_timer() {
 	TCCR1B = 0;
 	TIMSK1 = 0;
 }
+
+void start_game() {
+	uart_printstr("Check to start game\r\n");
+	if (player_ready >= PLAYER_COUNT) {
+		uart_printstr("Starting game\r\n");
+		stop_timer();
+		timer_count = 0;
+		_delay_ms(500);
+		PORTD &= ~(1 << LED_G);
+		state = PLAYING;
+	}
+	//Timer configuration
+	TCNT1 = 0;
+	TCCR1A = 0;
+	TCCR1B = (1 << WGM12);
+	TCCR1B |= (1 << CS12) | (1 << CS10);
+	OCR1A = 15625; // = 1s
+	TIMSK1 |= (1 << OCIE1A);
+}
+
 
 void reset() {
 	uart_printstr("Reset\r\n");

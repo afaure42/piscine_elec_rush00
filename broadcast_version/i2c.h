@@ -31,11 +31,12 @@
 
 #define TWI_ADDR 0x10
 
-#define TIMEOUT 1
+#define TIMEOUT 5
 
 #define READY_COMMAND 0x01
 #define FINISH_COMMAND 0x02
 #define LOSE_COMMAND 0x03
+#define RESET_COMMAND 0x04
 
 void i2c_send_byte(uint8_t slave_address, uint8_t byte);
 
