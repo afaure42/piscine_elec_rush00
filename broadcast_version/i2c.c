@@ -9,38 +9,6 @@ void i2c_stop(void);
 void i2c_start_read(uint8_t slave_address);
 uint8_t i2c_read(uint8_t ack, uint8_t * buff);
 
-extern int player_ready;
-extern int player_finished;
-extern int winnable;
-void start_game();
-void check_end();
-
-ISR(TWI_vect)
-{
-	uart_printstr("Interrupt\r\n");
-	uart_print_twi_status();
-	if (TWSR == TW_SR_GCALL_DATA_ACK)
-	{
-		uart_printstr("Received general call\r\n");
-		uint8_t command = TWDR;
-		if (command == READY_COMMAND) {
-			uart_printstr("Receive ready command\r\n");
-			player_ready++;
-			start_game();
-		} else if (command == FINISH_COMMAND) {
-			uart_printstr("Receive finish command\r\n");
-			player_finished++;
-			winnable = 0;
-			check_end();
-		} else if (command == LOSE_COMMAND) {
-			uart_printstr("Receive lose command\r\n");
-			player_finished++;
-			check_end();
-		}
-	}
-	TWCR = (1 << TWINT) | (1 << TWEA) | (1 << TWEN) | (1 << TWIE);
-}
-
 void i2c_init(void)
 {
 	//setting SCL frequency in the bitrate register
