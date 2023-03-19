@@ -31,7 +31,7 @@
 
 #define TWI_ADDR 0x10
 
-#define TIMEOUT 1
+#define TIMEOUT 5
 
 #define READY_COMMAND 0x01
 #define FINISH_COMMAND 0x02
