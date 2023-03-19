@@ -48,6 +48,11 @@ ISR(TIMER1_COMPA_vect) {
 	}
 }
 
+void stop_timer() {
+	TCCR1B = 0;
+	TIMSK1 = 0;
+}
+
 void start_game() {
 	uart_printstr("Check to start game\r\n");
 	if (player_ready >= PLAYER_COUNT) {
