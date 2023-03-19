@@ -11,8 +11,8 @@ volatile int result = 0;
 void reset();
 
 void timeout() {
-	i2c_send_byte(0x0, RESET_COMMAND);
 	reset();
+	i2c_send_byte(0x0, RESET_COMMAND);
 }
 
 ISR(TIMER1_COMPA_vect) {
@@ -48,11 +48,6 @@ ISR(TIMER1_COMPA_vect) {
 	}
 }
 
-void stop_timer() {
-	TCCR1B = 0;
-	TIMSK1 = 0;
-}
-
 void start_game() {
 	uart_printstr("Check to start game\r\n");
 	if (player_ready >= PLAYER_COUNT) {
@@ -75,6 +70,8 @@ void start_game() {
 
 void reset() {
 	uart_printstr("Reset\r\n");
+
+	stop_timer();
 
 	state = STARTING;
 	ready = 0;
