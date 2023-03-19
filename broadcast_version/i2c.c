@@ -42,25 +42,39 @@ void i2c_send_full_command(uint8_t slave_address, uint8_t command, uint8_t param
 
 uint8_t i2c_receive_byte(uint8_t * buffer, uint8_t size)
 {
+	uart_printstr("Receiving bytes in twi\r\n");
 	for(uint8_t i = 0; i < size; i++)
 	{
-		TWCR = (1 << TWINT) | ((i != size - 1) << TWEA) | (1 << TWEN);
+		TWCR = (1 << TWINT) | (1 << TWEA) | (1 << TWEN);
 		if (i2c_wait() != 0)
 			return 1;
+		uart_print_twi_status();
 		*buffer = TWDR;
 	}
+	TWCR = (1 << TWINT) | (1 << TWEN);// | (1 << TWEA);
+	i2c_wait();
+	uart_print_twi_status();
 	return 0;
 }
 
-void i2c_send_byte(uint8_t slave_address, uint8_t byte)
+uint8_t i2c_send_byte(uint8_t slave_address, uint8_t byte)
 {
 	uart_printstr("waiting before send\r\n");
 	i2c_start_write(slave_address);
+	if (TWSR != TW_MT_SLA_ACK)	{
+		i2c_stop();
+		return (1);
+	}
 	uart_print_twi_status();
 	i2c_write(byte);
+	if (TWSR != TW_MT_DATA_ACK) {
+		i2c_stop();
+		return (1);
+	}
 	uart_print_twi_status();
 	i2c_stop();
 	uart_printstr("byte sent\r\n");
+	return (0);
 }
 
 uint8_t i2c_read_byte(uint8_t slave_address, uint8_t * buffer, uint8_t size)
@@ -147,7 +161,7 @@ void uart_print_twi_status()
  	//extracting status code from TW status register
 	uint8_t status = TWSR;
 	status &= TW_STATUS_MASK;
-
+	uart_printstr("\t\t");
 	switch (status)
 	{
 	case TW_MASTER_START: {
