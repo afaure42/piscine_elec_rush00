@@ -58,12 +58,12 @@ void start_game() {
 	if (player_ready >= PLAYER_COUNT) {
 		uart_printstr("Starting game\r\n");
 		stop_timer();
-		timer_count = 0;
 		_delay_ms(500);
 		PORTD &= ~(1 << LED_G);
 		state = PLAYING;
 	}
 	//Timer configuration
+	timer_count = 0;
 	TCNT1 = 0;
 	TCCR1A = 0;
 	TCCR1B = (1 << WGM12);
