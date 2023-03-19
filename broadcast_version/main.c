@@ -111,6 +111,7 @@ ISR(INT0_vect) {
 		player_ready++;
 		PORTD &= ~(1 << LED_R);
 		PORTD |= (1 << LED_G);
+		i2c_send_byte(0x0, READY_COMMAND);
 		start_game();
 		_delay_ms(20);
 	} else if (state == PLAYING) {

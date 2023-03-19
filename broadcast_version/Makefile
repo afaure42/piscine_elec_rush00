@@ -31,6 +31,11 @@ hex: $(HEX)
 flash: hex
 	avrdude $(PROGRAMMER) -P /dev/ttyUSB0 -U flash:w:$(HEX):i
 
+flash2: hex
+	avrdude $(PROGRAMMER) -P /dev/ttyUSB1 -U flash:w:$(HEX):i
+	avrdude $(PROGRAMMER) -P /dev/ttyUSB0 -U flash:w:$(HEX):i
+
+
 clean:
 	rm -rf $(BINS) $(HEX)
 	

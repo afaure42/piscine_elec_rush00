@@ -18,7 +18,8 @@ void check_end();
 ISR(TWI_vect)
 {
 	uart_printstr("Interrupt\r\n");
-	if (TWSR == TW_SR_SLA_ACK)
+	uart_print_twi_status();
+	if (TWSR == TW_SR_GCALL_DATA_ACK)
 	{
 		uart_printstr("Received general call\r\n");
 		uint8_t command = TWDR;
@@ -37,6 +38,7 @@ ISR(TWI_vect)
 			check_end();
 		}
 	}
+	TWCR = (1 << TWINT) | (1 << TWEA) | (1 << TWEN) | (1 << TWIE);
 }
 
 void i2c_init(void)
@@ -52,8 +54,17 @@ void i2c_init(void)
 	TWCR = (1<<TWIE) | (1<<TWEA) | (1<<TWEN);
 }
 
+uint8_t i2c_wait(void)
+{
+	while ((TWCR & (1 << TWINT)) == 0); //wait end of operation
+
+	//TODO ADD A RETURN IN CASE OF TIMEOUT OR ERROR
+	return 0;
+}
+
 void i2c_send_full_command(uint8_t slave_address, uint8_t command, uint8_t param1, uint8_t param2)
 {
+	i2c_wait();
 	i2c_start_write(slave_address);
 	i2c_write(command);
 	i2c_write(param1);
@@ -63,13 +74,18 @@ void i2c_send_full_command(uint8_t slave_address, uint8_t command, uint8_t param
 
 void i2c_send_byte(uint8_t slave_address, uint8_t byte)
 {
+	uart_printstr("waiting before send\r\n");
 	i2c_start_write(slave_address);
+	uart_print_twi_status();
 	i2c_write(byte);
+	uart_print_twi_status();
 	i2c_stop();
+	uart_printstr("byte sent\r\n");
 }
 
 uint8_t i2c_read_byte(uint8_t slave_address, uint8_t * buffer, uint8_t size)
 {
+	i2c_wait();
 	i2c_start_read(slave_address);
 
 	for(uint8_t i = 0; i < size; i++)
@@ -85,15 +101,16 @@ void i2c_start_write(uint8_t slave_address)
 {
 	//sending START on the TWI ( TWSTA for start, TWEN to enable TW, 
 	//TWINT to clear theinterrupt flag and start operating)
-	TWCR = 1 << TWINT | 1 << TWSTA | 1 << TWEN;
+	TWCR = 1 << TWINT | 1 << TWSTA | 1 << TWEN | 1 << TWIE;
 
 	while ((TWCR & (1 << TWINT)) == 0); //wait end of operation
 	// uart_print_twi_status();
 
+
 	//setting data register as temp sensor address and write mode
 	TWDR = (slave_address << 1) | TW_WRITE;
 	//sending SLA + W
-	TWCR = 1 << TWINT | 1 << TWEN;
+	TWCR = (1 << TWINT) | (1 << TWIE) | (1 << TWEA) | (1 << TWEN);
 
 	while ((TWCR & (1 <<TWINT)) == 0); // wait for ACK
 }
@@ -108,7 +125,7 @@ void i2c_start_read(uint8_t slave_address)
 	while ((TWCR & (1 << TWINT)) == 0);
 
 	TWDR = (slave_address << 1) | TW_READ;
-	TWCR = 1 << TWINT | 1 << TWEN;
+	TWCR |= 1 << TWINT | 1 << TWEN;
 
 	while((TWCR & (1 << TWINT)) == 0);
 }
@@ -117,7 +134,8 @@ void i2c_stop(void)
 {
 	//sending STOP on the TWI ( TWSTO for stop,
 	// TWINT to clear interrupt flag and start operating)
-	TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+	TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEA) | (1 << TWEN)
+			| (1 << TWIE);
 }
 
 void i2c_write(unsigned char data)
@@ -126,7 +144,7 @@ void i2c_write(unsigned char data)
 	TWDR = data;
 
 	//sending data
-	TWCR = 1 << TWINT | 1 << TWEN;
+	TWCR |= 1 << TWINT;
 
 	while ((TWCR & (1 << TWINT)) == 0); // wait until it is done
 }
@@ -134,7 +152,7 @@ void i2c_write(unsigned char data)
 uint8_t i2c_read(uint8_t ack, uint8_t * buff)
 {
 	//setting TWI in receive mode
-	TWCR = 1 << TWINT | 1 << TWEN | ack << TWEA;
+	TWCR |= 1 << TWINT | 1 << TWEN | ack << TWEA;
 
 	//waiting to receive data
 	while((TWCR & (1 << TWINT)) == 0);
@@ -168,11 +186,11 @@ void uart_print_twi_status()
 		uart_printstr("SLA + W has been transmitted, NACK has been received\r\n");
 		break;
 	}
-	case TW_MASTER_TRANSMIT_ACK: {
+	case TW_MT_DATA_ACK: {
 		uart_printstr("Data byte has been transmitted, ACK has been received\r\n");
 		break;
 	}
-	case TW_MASTER_TRANSMIT_NACK: {
+	case TW_MT_DATA_NACK: {
 		uart_printstr("Data byte has been transmitted, NACK has been received\r\n");
 		break;
 	}
@@ -194,6 +212,38 @@ void uart_print_twi_status()
 	}
 	case TW_MASTER_RECEIVE_NACK: {
 		uart_printstr("Data byte has been received, NACK has been returned\r\n");
+		break;
+	}
+	case TW_SR_SLA_ACK: {
+		uart_printstr("Slave receiver received SLA + W, ACK returned\r\n");
+		break;
+	}
+	case TW_SR_GCALL_ACK: {
+		uart_printstr("Slave receiver received GCALL, ACK returned\r\n");
+		break;
+	}
+	case TW_SR_GCALL_DATA_ACK: {
+		uart_printstr("Slave receiver received GCALL DATA, ACK returned\r\n");
+		break;
+	}
+	case TW_SR_GCALL_DATA_NACK: {
+		uart_printstr("Slave receiver received GCALL DATA, NACK returned\r\n");
+		break;
+	}
+	case TW_SR_DATA_ACK: {
+		uart_printstr("Slave receiver received data, ACK returned\r\n");
+		break;
+	}
+	case TW_SR_DATA_NACK: {
+		uart_printstr("Slave receiver received data, NACK returned\r\n");
+		break;
+	}
+	case TW_BUS_ERROR: {
+		uart_printstr("TWI BUS ERROR\r\n");
+		break;
+	}
+	case TW_NO_INFO: {
+		uart_printstr("TWI NO INFO\r\n");
 		break;
 	}
 	default: {

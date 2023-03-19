@@ -51,5 +51,6 @@ uint8_t i2c_read_byte(uint8_t slave_address, uint8_t * buffer, uint8_t buffer_si
 void i2c_send_full_command(uint8_t slave_address, uint8_t command, uint8_t param1, uint8_t param2);
 void i2c_init(void);
 void i2c_init_as_slave(void);
+uint8_t i2c_wait(void);
 
 #endif
