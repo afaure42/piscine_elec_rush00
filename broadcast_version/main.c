@@ -83,16 +83,27 @@ void reset() {
 	PORTD |= (1 << LED_R);
 }
 
+void blink(int led) {
+	for(int i = 0; i < 5; i ++) {
+		PORTD |= (1 << led);
+		_delay_ms(200);
+		PORTD &= ~(1 << led);
+		_delay_ms(200);
+	}
+}
+
 void check_end() {
 	uart_printstr("Check to end game\r\n");
 	if (player_finished >= PLAYER_COUNT) {
 		uart_printstr("Ending game\r\n");
+		PORTD &= ~(1 << LED_B);
+		PORTD &= ~(1 << LED_R);
 		if (result == 1) {
 			uart_printstr("Win\r\n");
-			PORTD |= (1 << LED_G);
+			blink(LED_G);
 		} else {
 			uart_printstr("Lose\r\n");
-			PORTD |= (1 << LED_R);
+			blink(LED_R);
 		}
 		_delay_ms(1000);
 		PORTD &= ~(1 << LED_R);
@@ -144,6 +155,7 @@ ISR(INT0_vect) {
 			} else {
 				uart_printstr("but not winnable\r\n");
 			}
+			PORTD = (1 << LED_B);
 			result = winnable;
 			i2c_send_byte(0x0, FINISH_COMMAND);
 		}
