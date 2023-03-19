@@ -28,4 +28,9 @@ typedef enum e_game_state {
 	CLICKED,
 } game_state;
 
+typedef enum e_error_state {
+	NOTHING,
+	TWI_TIMEOUT,
+} error_state;
+
 #endif

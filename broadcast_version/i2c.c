@@ -40,6 +40,20 @@ void i2c_send_full_command(uint8_t slave_address, uint8_t command, uint8_t param
 	i2c_stop();
 }
 
+uint8_t i2c_receive_byte(uint8_t * buffer, uint8_t size)
+{
+	for(uint8_t i = 0; i < size; i++)
+	{
+		TWCR = (1 << TWINT) | ((i != size - 1) << TWEA) | (1 << TWEN);
+		if (i2c_wait() != 0)
+			return 1;
+		buffer = TWDR;
+	}
+	TWCR = (1 << TWINT) | (1 << TWEN);
+	i2c_wait(); //wait for stop
+	return 0;
+}
+
 void i2c_send_byte(uint8_t slave_address, uint8_t byte)
 {
 	uart_printstr("waiting before send\r\n");

@@ -7,31 +7,79 @@ volatile game_state state = STARTING;
 volatile int player_finished = 0;
 volatile int winnable = 1;
 volatile int result = 0;
+volatile error_state error = NOTHING;
+
+void reset_test();
+void start_game();
+void check_end();
+
+void trigger_resync()
+{
+	i2c_send_byte(0x0, RESET_COMMAND);
+	reset_test();
+	TWCR = (1 << TWINT) | (1 << TWEA) | (1 << TWEN) | (1 << TWIE);
+}
 
 ISR(TWI_vect)
 {
 	uart_printstr("Interrupt\r\n");
 	uart_print_twi_status();
-	if (TWSR == TW_SR_GCALL_DATA_ACK)
+	if (TWSR == TW_SR_GCALL_ACK)
 	{
 		uart_printstr("Received general call\r\n");
-		uint8_t command = TWDR;
+
+		uint8_t command = 0;
+		i2c_receive_byte(&command, 1);
+		uint8_t data = (command & 0xF0) >> 4;
+		command = command & 0x0F;
+
 		if (command == READY_COMMAND) {
 			uart_printstr("Receive ready command\r\n");
+			if (state != STARTING){
+				trigger_resync();
+				reti();
+			}
 			player_ready++;
+			if (player_ready!= data) {
+				trigger_resync();
+				reti();
+			}
 			start_game();
+
 		} else if (command == FINISH_COMMAND) {
 			uart_printstr("Receive finish command\r\n");
+
+			if (state != PLAYING) {
+				trigger_resync();
+				reti();
+			}
 			player_finished++;
+			if (player_finished != data) {
+				trigger_resync();
+				reti();
+			}
 			winnable = 0;
 			check_end();
+
 		} else if (command == LOSE_COMMAND) {
 			uart_printstr("Receive lose command\r\n");
+
+			if (state != PLAYING) {
+				trigger_resync();
+				reti();
+			}
+
 			player_finished++;
+			if (player_finished != data) {
+				trigger_resync();
+				reti();
+			}
 			check_end();
+
 		} else if (command == RESET_COMMAND) {
 			uart_printstr("Receive reset command\r\n");
 			reset_test();
+			reti();
 		}
 	}
 	TWCR = (1 << TWINT) | (1 << TWEA) | (1 << TWEN) | (1 << TWIE);
@@ -164,7 +212,7 @@ ISR(INT0_vect) {
 		player_ready++;
 		PORTD &= ~(1 << LED_R);
 		PORTD |= (1 << LED_G);
-		i2c_send_byte(0x0, READY_COMMAND);
+		i2c_send_byte(0x0, READY_COMMAND | ( player_ready << 4));
 		start_game();
 		_delay_ms(20);
 	} else if (state == PLAYING) {
@@ -188,7 +236,7 @@ ISR(INT0_vect) {
 			PORTD = (1 << LED_R);
 			result = 0;
 			winnable = 0;
-			i2c_send_byte(0x0, LOSE_COMMAND);
+			i2c_send_byte(0x0, LOSE_COMMAND | (player_finished << 4));
 		} else {
 			//in time
 			uart_printstr("In time ");
@@ -199,7 +247,7 @@ ISR(INT0_vect) {
 			}
 			PORTD = (1 << LED_B);
 			result = winnable;
-			i2c_send_byte(0x0, FINISH_COMMAND);
+			i2c_send_byte(0x0, FINISH_COMMAND | (player_finished << 4));
 		}
 		check_end();
 	}
