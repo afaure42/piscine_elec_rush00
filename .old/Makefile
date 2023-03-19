@@ -1,9 +1,9 @@
 DEVICE=atmega328p
 F_CPU = 16000000UL
 BAUDRATE=115200
-PROGRAMMER= -c arduino -b$(BAUDRATE) -p $(DEVICE)
+PROGRAMMER= -c arduino -P /dev/ttyUSB0 -b$(BAUDRATE) -p $(DEVICE)
 
-SRCS = main.c uart.c i2c.c
+SRCS = slave.c uart.c i2c.c slave_command.c
 
 BINS = $(SRCS:.c=.bin)
 HEX = main.hex
@@ -29,12 +29,7 @@ $(HEX): $(BINS)
 hex: $(HEX)
 
 flash: hex
-	avrdude $(PROGRAMMER) -P /dev/ttyUSB0 -U flash:w:$(HEX):i
-
-flash2: hex
-	avrdude $(PROGRAMMER) -P /dev/ttyUSB1 -U flash:w:$(HEX):i
-	avrdude $(PROGRAMMER) -P /dev/ttyUSB0 -U flash:w:$(HEX):i
-
+	avrdude $(PROGRAMMER) -U flash:w:$(HEX):i
 
 clean:
 	rm -rf $(BINS) $(HEX)

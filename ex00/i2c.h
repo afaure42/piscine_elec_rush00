@@ -4,6 +4,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <util/twi.h>
+#include <avr/interrupt.h>
 #include "uart.h"
 
 #define SCL_FREQUENCY 100000
@@ -28,9 +29,14 @@
 #define ACK 1
 #define NACK 0
 
-#define OWN_SLAVE_ADDRESS 0x10
+#define TWI_ADDR 0x10
 
-#define TIMEOUT 1
+#define TIMEOUT 10
+
+#define READY_COMMAND 0x01
+#define FINISH_COMMAND 0x02
+#define LOSE_COMMAND 0x03
+#define RESET_COMMAND 0x04
 
 uint8_t i2c_send_byte(uint8_t slave_address, uint8_t byte);
 
@@ -46,5 +52,7 @@ uint8_t i2c_read_byte(uint8_t slave_address, uint8_t * buffer, uint8_t buffer_si
 void i2c_send_full_command(uint8_t slave_address, uint8_t command, uint8_t param1, uint8_t param2);
 void i2c_init(void);
 void i2c_init_as_slave(void);
+uint8_t i2c_wait(void);
+uint8_t i2c_receive_byte(uint8_t * buffer, uint8_t size);
 
 #endif
