@@ -238,6 +238,10 @@ void uart_print_twi_status()
 		uart_printstr("Slave receiver received data, NACK returned\r\n");
 		break;
 	}
+	case TW_SR_STOP: {
+		uart_printstr("Slave receiver received STOP\r\n");
+		break;
+	}
 	case TW_BUS_ERROR: {
 		uart_printstr("TWI BUS ERROR\r\n");
 		break;
